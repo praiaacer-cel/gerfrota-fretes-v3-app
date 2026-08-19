@@ -50,6 +50,11 @@ jobs:
       - name: Ensure gradlew is executable
         run: chmod +x ./GerFrotaFretesApp/gradlew
 
+      - name: Execute Python script to prepare project
+        run: |
+         python3 criar_gerfrota_fretes_v3.py
+        working-directory: gerfrota-fretes-v3-app
+
       - name: Build Release APK
         working-directory: GerFrotaFretesApp
         run: ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
