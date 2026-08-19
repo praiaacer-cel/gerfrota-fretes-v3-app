@@ -1,5 +1,4 @@
 name: Build Android APK
-
 on:
   push:
     branches: [ main ]
@@ -11,17 +10,16 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
-
+          
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -31,7 +29,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
+            
       - name: Install Android SDK command-line tools
         run: |
           sudo apt-get update
@@ -46,23 +44,26 @@ jobs:
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
         shell: bash
-
+        
       - name: Ensure gradlew is executable
         run: chmod +x ./GerFrotaFretesApp/gradlew
-
+        
       - name: Execute Python script to prepare project
         run: |
-         python3 criar_gerfrota_fretes_v3.py
+          python3 criar_gerfrota_fretes_v3.py
         working-directory: gerfrota-fretes-v3-app
-
+        
       - name: Build Release APK
         working-directory: GerFrotaFretesApp
         run: ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
-
+        
       - name: Optionally sign APK (requires repo secrets)
-        if: ${{ secrets.ANDROID_KEYSTORE && secrets.KEYSTORE_PASSWORD && secrets.KEY_ALIAS && secrets.KEY_PASSWORD }}
+        # CORREÇÃO 1: Uso de != '' para verificar se os secrets existem
+        if: ${{ secrets.ANDROID_KEYSTORE != '' && secrets.KEYSTORE_PASSWORD != '' && secrets.KEY_ALIAS != '' && secrets.KEY_PASSWORD != '' }}
         env:
           ANDROID_SDK_ROOT: ${{ github.workspace }}/Android/Sdk
+          # CORREÇÃO 2: Adicionado ANDROID_KEYSTORE nas variáveis de ambiente
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -80,7 +81,7 @@ jobs:
             echo "No APK found to sign" && exit 1
           fi
           $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out ${unsigned_apk%.apk}-signed.apk $unsigned_apk
-
+          
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
