@@ -58,16 +58,20 @@ jobs:
         run: ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
         
       - name: Optionally sign APK (requires repo secrets)
-        # CORREÇÃO 1: Uso de != '' para verificar se os secrets existem
-        if: ${{ secrets.ANDROID_KEYSTORE != '' && secrets.KEYSTORE_PASSWORD != '' && secrets.KEY_ALIAS != '' && secrets.KEY_PASSWORD != '' }}
         env:
           ANDROID_SDK_ROOT: ${{ github.workspace }}/Android/Sdk
-          # CORREÇÃO 2: Adicionado ANDROID_KEYSTORE nas variáveis de ambiente
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
+          # Verifica se os secrets estão configurados
+          if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
+            exit 0
+          fi
+          
+          echo "🔐 Iniciando assinatura do APK..."
           echo "$ANDROID_KEYSTORE" | base64 --decode > release.keystore
           APKSIGNER=$ANDROID_SDK_ROOT/build-tools/33.0.2/apksigner
           if [ ! -x "$APKSIGNER" ]; then
@@ -78,9 +82,10 @@ jobs:
             unsigned_apk=$(ls app/build/outputs/apk/release/*.apk | head -n1)
           fi
           if [ -z "$unsigned_apk" ]; then
-            echo "No APK found to sign" && exit 1
+            echo "❌ Nenhum APK encontrado para assinar" && exit 1
           fi
           $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out ${unsigned_apk%.apk}-signed.apk $unsigned_apk
+          echo "✅ APK assinado com sucesso!"
           
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
