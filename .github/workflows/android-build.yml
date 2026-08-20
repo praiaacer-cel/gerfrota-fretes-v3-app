@@ -58,7 +58,7 @@ jobs:
           echo "🚀 Executando script Python para preparar o projeto..."
           python3 criar_gerfrota_fretes_v3.py
           
-          echo "🔍 Verificando estrutura de arquivos gerada..."
+          echo " Verificando estrutura de arquivos gerada..."
           ls -la
           
           if [ ! -d "./GerFrotaFretesApp" ]; then
@@ -68,7 +68,7 @@ jobs:
           
           # ✅ CORREÇÃO DEFINITIVA: Se o gradlew não existir, nós o criamos automaticamente
           if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
-            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
+            echo "️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
@@ -94,7 +94,7 @@ jobs:
             rm -rf gradle-8.4 gradle-dist.zip
             
             # 3. Criar propriedades do wrapper
-            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+            cat > gradle/wrapper/gradle-wrapper.properties << EOF
 distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
