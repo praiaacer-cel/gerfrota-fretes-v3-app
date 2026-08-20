@@ -43,25 +43,23 @@ jobs:
             mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest || true
           fi
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
-          
           mkdir -p $ANDROID_SDK_ROOT/licenses
           echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
         shell: bash
         
       - name: Execute Python script and ensure Gradle Wrapper
         run: |
-          echo "🚀 Executando script Python para preparar o projeto..."
+          echo " Executando script Python para preparar o projeto..."
           python3 criar_gerfrota_fretes_v3.py
           
           echo "🔍 Verificando estrutura de arquivos gerada..."
           ls -la
           
           if [ ! -d "./GerFrotaFretesApp" ]; then
-            echo "❌ ERRO CRÍTICO: O diretório 'GerFrotaFretesApp' não foi criado pelo script Python!"
+            echo " ERRO CRÍTICO: O diretório 'GerFrotaFretesApp' não foi criado pelo script Python!"
             exit 1
           fi
           
@@ -103,6 +101,64 @@ jobs:
           echo "✅ Estrutura do projeto pronta para compilação!"
         working-directory: .
         
+      # ✅ OPÇÃO B: Gerar keystore de debug e configurar assinatura no release
+      - name: Generate Debug Keystore for Release Signing
+        run: |
+          echo "🔐 Gerando keystore de debug para assinatura do release..."
+          
+          # Gerar keystore de debug
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          
+          # Mover para o diretório do app
+          mv debug.keystore GerFrotaFretesApp/
+          
+          # Criar arquivo de propriedades do keystore
+          cat > GerFrotaFretesApp/keystore.properties << EOF
+storePassword=android
+keyPassword=android
+keyAlias=androiddebugkey
+storeFile=debug.keystore
+EOF
+          
+          echo "✅ Keystore de debug gerado com sucesso!"
+          
+      # ✅ OPÇÃO B: Modificar build.gradle.kts para usar signingConfig no release
+      - name: Configure Release Signing in build.gradle.kts
+        run: |
+          echo "⚙️ Configurando assinatura no release..."
+          
+          # Adicionar import de Properties no início do arquivo
+          sed -i '1s/^/import java.util.Properties\nimport java.io.FileInputStream\n\n/' GerFrotaFretesApp/app/build.gradle.kts
+          
+          # Adicionar bloco de configuração do keystore antes do android {}
+          cat > /tmp/signing_config.txt << 'EOF'
+          
+          val keystorePropertiesFile = rootProject.file("keystore.properties")
+          val keystoreProperties = Properties()
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+          }
+          
+          android {
+              signingConfigs {
+                  create("release") {
+                      keyAlias = keystoreProperties["keyAlias"] as String
+                      keyPassword = keystoreProperties["keyPassword"] as String
+                      storeFile = file(keystoreProperties["storeFile"] as String)
+                      storePassword = keystoreProperties["storePassword"] as String
+                  }
+              }
+          }
+          EOF
+          
+          # Inserir configuração após a linha "android {"
+          sed -i '/^android {/r /tmp/signing_config.txt' GerFrotaFretesApp/app/build.gradle.kts
+          
+          # Adicionar signingConfig no buildType release
+          sed -i '/release {/a\            signingConfig = signingConfigs.getByName("release")' GerFrotaFretesApp/app/build.gradle.kts
+          
+          echo "✅ Configuração de assinatura adicionada ao build.gradle.kts!"
+          
       - name: Build Release APK (Clean Build)
         working-directory: GerFrotaFretesApp
         run: ./gradlew clean assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
@@ -112,67 +168,31 @@ jobs:
         run: |
           echo ">> Arquivos APK no diretório de saída:"
           ls -lh app/build/outputs/apk/release || true
-
-      - name: Optionally sign APK (requires repo secrets)
-        env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/Android/Sdk
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
-            exit 0
-          fi
           
-          echo "🔐 Iniciando assinatura do APK..."
-          echo "$ANDROID_KEYSTORE" | base64 --decode > release.keystore
-          APKSIGNER=$ANDROID_SDK_ROOT/build-tools/33.0.2/apksigner
-          if [ ! -x "$APKSIGNER" ]; then
-            APKSIGNER=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/apksigner | tail -n 1)
-          fi
-          
-          unsigned_apk=$(ls app/build/outputs/apk/release/*unsigned*.apk 2>/dev/null | head -n1 || true)
-          if [ -z "$unsigned_apk" ]; then
-            unsigned_apk=$(ls app/build/outputs/apk/release/app-release*.apk 2>/dev/null | grep -v "unsigned" | head -n1 || true)
-          fi
-          if [ -z "$unsigned_apk" ]; then
-            echo "❌ Nenhum APK encontrado para assinar" && exit 1
-          fi
-          
-          signed_apk="${unsigned_apk%.apk}-signed.apk"
-          $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out "$signed_apk" "$unsigned_apk"
-          echo "✅ APK assinado com sucesso: $signed_apk"
-
       - name: Select and Verify APK
         working-directory: GerFrotaFretesApp
         run: |
           echo "🔍 Validando o arquivo APK antes do upload..."
           
-          # 1. Preferir o APK assinado se existir
-          signed=$(ls app/build/outputs/apk/release/*-signed*.apk 2>/dev/null | head -n1 || true)
-          if [ -n "$signed" ]; then
-            echo "APK_TO_UPLOAD=$(pwd)/$signed" >> $GITHUB_ENV
-            echo "✅ APK selecionado (Assinado): $signed"
-            ls -lh "$signed"
-            exit 0
-          fi
-          
-          # 2. Caso contrário, preferir o APK de release padrão (ignorando explicitamente os 'unsigned' se possível)
-          release_apk=$(ls app/build/outputs/apk/release/app-release*.apk 2>/dev/null | grep -v "unsigned" | head -n1 || true)
-          if [ -z "$release_apk" ]; then
-            release_apk=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -n1 || true)
-          fi
+          # Selecionar o APK de release (já assinado pela configuração do build.gradle.kts)
+          release_apk=$(ls app/build/outputs/apk/release/app-release.apk 2>/dev/null | head -n1 || true)
           
           if [ -n "$release_apk" ]; then
             echo "APK_TO_UPLOAD=$(pwd)/$release_apk" >> $GITHUB_ENV
-            echo "✅ APK selecionado (Release): $release_apk"
+            echo "✅ APK selecionado (Release assinado): $release_apk"
             ls -lh "$release_apk"
+            
+            # Verificar se o APK está assinado
+            if jarsigner -verify -verbose "$release_apk" 2>&1 | grep -q "jar verified"; then
+              echo "✅ APK está assinado e verificado!"
+            else
+              echo "⚠️ Aviso: APK pode não estar assinado corretamente"
+            fi
+            
             exit 0
           fi
           
-          echo "❌ Nenhum arquivo .apk válido encontrado em app/build/outputs/apk/release" >&2
+          echo "❌ Nenhum arquivo app-release.apk encontrado em app/build/outputs/apk/release" >&2
           exit 1
 
       - name: Upload APK artifact
