@@ -44,7 +44,7 @@ jobs:
           fi
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
           
-          # CORREÇÃO DO "BROKEN PIPE": Aceitar licenças criando os arquivos diretamente (método mais robusto)
+          # Aceitar licenças criando os arquivos diretamente (evita o erro "Broken pipe")
           mkdir -p $ANDROID_SDK_ROOT/licenses
           echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
@@ -53,13 +53,14 @@ jobs:
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
         shell: bash
         
-      - name: Ensure gradlew is executable
-        run: chmod +x ./GerFrotaFretesApp/gradlew
-        
+      # ✅ CORREÇÃO: O script Python agora roda ANTES de tentar acessar o gradlew
       - name: Execute Python script to prepare project
         run: |
           python3 criar_gerfrota_fretes_v3.py
-        working-directory: gerfrota-fretes-v3-app
+        working-directory: .
+        
+      - name: Ensure gradlew is executable
+        run: chmod +x ./GerFrotaFretesApp/gradlew
         
       - name: Build Release APK
         working-directory: GerFrotaFretesApp
@@ -73,7 +74,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # CORREÇÃO DO ERRO DE PARSER: Verificação feita dentro do bash, não na expressão YAML
+          # Verificação feita dentro do bash para evitar erro de parser do YAML
           if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
             echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
             exit 0
