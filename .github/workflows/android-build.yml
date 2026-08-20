@@ -66,11 +66,10 @@ jobs:
           fi
           
           if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
-            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente (método à prova de falhas)..."
+            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
-            # 1. Criar o script gradlew localmente via echo (ZERO risco de erro 404 ou indentação YAML)
             echo '#!/bin/sh' > gradlew
             echo 'APP_HOME=$(cd "$(dirname "$0")" && pwd)' >> gradlew
             echo 'CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"' >> gradlew
@@ -81,16 +80,13 @@ jobs:
             echo 'exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"' >> gradlew
             chmod +x gradlew
             
-            # 2. Baixar APENAS o gradle-wrapper.jar do repositório oficial do Gradle (URL estável)
             curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
             
-            # 3. Validar se o arquivo .jar foi baixado com sucesso (tamanho > 0)
             if [ ! -s "gradle/wrapper/gradle-wrapper.jar" ]; then
               echo "❌ Falha ao baixar gradle-wrapper.jar (arquivo vazio ou inexistente)"
               exit 1
             fi
             
-            # 4. Criar propriedades do wrapper
             echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
             echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
             echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
@@ -107,10 +103,18 @@ jobs:
           echo "✅ Estrutura do projeto pronta para compilação!"
         working-directory: .
         
-      - name: Build Release APK
+      # ✅ CORREÇÃO 1: Build limpo (clean) para evitar APKs incrementais/residuais
+      - name: Build Release APK (Clean Build)
         working-directory: GerFrotaFretesApp
-        run: ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
+        run: ./gradlew clean assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
         
+      # ✅ CORREÇÃO 2: Listar arquivos gerados para debug e transparência
+      - name: Show generated APKs
+        working-directory: GerFrotaFretesApp
+        run: |
+          echo ">> Arquivos APK no diretório de saída:"
+          ls -la app/build/outputs/apk/release || true
+
       - name: Optionally sign APK (requires repo secrets)
         env:
           ANDROID_SDK_ROOT: ${{ github.workspace }}/Android/Sdk
@@ -130,18 +134,46 @@ jobs:
           if [ ! -x "$APKSIGNER" ]; then
             APKSIGNER=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/apksigner | tail -n 1)
           fi
-          unsigned_apk=$(ls app/build/outputs/apk/release/*unsigned*.apk || true)
+          
+          # Procura primeiro por unsigned, senão pega o release padrão
+          unsigned_apk=$(ls app/build/outputs/apk/release/*unsigned*.apk 2>/dev/null | head -n1 || true)
           if [ -z "$unsigned_apk" ]; then
-            unsigned_apk=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+            unsigned_apk=$(ls app/build/outputs/apk/release/*release*.apk 2>/dev/null | head -n1 || true)
           fi
           if [ -z "$unsigned_apk" ]; then
             echo "❌ Nenhum APK encontrado para assinar" && exit 1
           fi
-          $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out ${unsigned_apk%.apk}-signed.apk $unsigned_apk
-          echo "✅ APK assinado com sucesso!"
           
+          signed_apk="${unsigned_apk%.apk}-signed.apk"
+          $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out "$signed_apk" "$unsigned_apk"
+          echo "✅ APK assinado com sucesso: $signed_apk"
+
+      # ✅ CORREÇÃO 3: Seleção determinística do arquivo correto para upload
+      - name: Select APK to upload
+        working-directory: GerFrotaFretesApp
+        run: |
+          # 1. Preferir o APK assinado se existir
+          signed=$(ls app/build/outputs/apk/release/*-signed*.apk 2>/dev/null | head -n1 || true)
+          if [ -n "$signed" ]; then
+            echo "APK_TO_UPLOAD=$signed" >> $GITHUB_ENV
+            echo "✅ Usando APK assinado: $signed"
+            exit 0
+          fi
+          
+          # 2. Caso contrário, preferir o APK de release padrão
+          release_apk=$(ls app/build/outputs/apk/release/*release*.apk 2>/dev/null | head -n1 || true)
+          if [ -n "$release_apk" ]; then
+            echo "APK_TO_UPLOAD=$release_apk" >> $GITHUB_ENV
+            echo "✅ Usando APK de release: $release_apk"
+            exit 0
+          fi
+          
+          echo "❌ Nenhum APK válido encontrado em app/build/outputs/apk/release" >&2
+          exit 1
+
+      # ✅ CORREÇÃO 4: Upload explícito do arquivo selecionado, com nome claro
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: GerFrotaFretesApp/app/build/outputs/apk/release/*.apk
+          name: GerFrota-Fretes-Release-APK
+          path: ${{ env.APK_TO_UPLOAD }}
