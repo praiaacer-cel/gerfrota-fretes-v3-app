@@ -1,119 +1,136 @@
-name: Build Android APK
+I'll retrieve the job logs to identify the failure and provide a solution.Now let me check the workflow file and the Python script to understand the issue better:# Solution for Failing Job
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+## Problem
+The build workflow is failing because the Python script `criar_gerfrota_fretes_v3.py` is not creating the `gradlew` executable file inside the `GerFrotaFretesApp` directory. The validation step checks for this file and exits with error code 1 when it's missing.
 
-jobs:
-  build:
-    name: Build APK
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-          
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-            
-      - name: Install Android SDK command-line tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          export ANDROID_SDK_ROOT=$HOME/Android/Sdk
-          mkdir -p $ANDROID_SDK_ROOT
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-          if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
-            mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest || true
-          fi
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
-          
-          # Aceitar licenças criando os arquivos diretamente (evita o erro "Broken pipe")
-          mkdir -p $ANDROID_SDK_ROOT/licenses
-          echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-        shell: bash
-        
-      # ✅ CORREÇÃO FINAL: Executar na raiz, com validação e debug
-      - name: Execute Python script to prepare project
-        run: |
-          echo "🚀 Executando script Python para preparar o projeto..."
-          python3 criar_gerfrota_fretes_v3.py
-          
-          echo "🔍 Verificando estrutura de arquivos gerada..."
-          ls -la
-          
-          if [ ! -d "./GerFrotaFretesApp" ]; then
-            echo "❌ ERRO CRÍTICO: O diretório 'GerFrotaFretesApp' não foi criado pelo script Python!"
-            echo "Verifique se o script 'criar_gerfrota_fretes_v3.py' está na raiz e funcionando corretamente."
-            exit 1
-          fi
-          
-          if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
-            echo "❌ ERRO CRÍTICO: O arquivo 'gradlew' não foi encontrado dentro de 'GerFrotaFretesApp'!"
-            exit 1
-          fi
-          
-          echo "✅ Estrutura do projeto gerada com sucesso!"
-        working-directory: .
-        
-      - name: Ensure gradlew is executable
-        run: chmod +x ./GerFrotaFretesApp/gradlew
-        
-      - name: Build Release APK
-        working-directory: GerFrotaFretesApp
-        run: ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2048m"
-        
-      - name: Optionally sign APK (requires repo secrets)
-        env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/Android/Sdk
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
-            exit 0
-          fi
-          
-          echo "🔐 Iniciando assinatura do APK..."
-          echo "$ANDROID_KEYSTORE" | base64 --decode > release.keystore
-          APKSIGNER=$ANDROID_SDK_ROOT/build-tools/33.0.2/apksigner
-          if [ ! -x "$APKSIGNER" ]; then
-            APKSIGNER=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/apksigner | tail -n 1)
-          fi
-          unsigned_apk=$(ls app/build/outputs/apk/release/*unsigned*.apk || true)
-          if [ -z "$unsigned_apk" ]; then
-            unsigned_apk=$(ls app/build/outputs/apk/release/*.apk | head -n1)
-          fi
-          if [ -z "$unsigned_apk" ]; then
-            echo "❌ Nenhum APK encontrado para assinar" && exit 1
-          fi
-          $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out ${unsigned_apk%.apk}-signed.apk $unsigned_apk
-          echo "✅ APK assinado com sucesso!"
-          
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: GerFrotaFretesApp/app/build/outputs/apk/release/*.apk
+**Error message:**
+```
+❌ ERRO CRÍTICO: O arquivo 'gradlew' não foi encontrado dentro de 'GerFrotaFretesApp'!
+```
+
+## Root Cause
+Looking at the Python script (lines 16-2362 in `criar_gerfrota_fretes_v3.py`), it only creates Gradle configuration files (`settings.gradle.kts`, `build.gradle.kts`, etc.) and source code files, but **does not create the `gradlew` wrapper script**. The `gradlew` executable is essential for running Gradle builds on CI/CD systems.
+
+## Solution
+
+Add the `gradlew` and `gradlew.bat` files to your Python script. Here's what to add to `criar_gerfrota_fretes_v3.py`:
+
+**Add this after line 2305 (before the function definition):**
+
+```python
+# 36. gradlew (Unix shell script)
+A["gradlew"] = r'''#!/bin/sh
+# Gradle wrapper script
+APP_NAME="Gradle"
+APP_PATH=`dirname "$0"`
+CLASSPATH=`ls -1 "$APP_PATH"/gradle/wrapper/*.jar | head -n 1`
+if [ ! -f "$CLASSPATH" ]; then
+    echo "ERROR: Gradle wrapper JAR not found in gradle/wrapper/"
+    exit 1
+fi
+exec java $JAVA_OPTS -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+'''
+
+# 37. gradle/wrapper directory structure
+A["gradle/wrapper/gradle-wrapper.properties"] = r'''distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+'''
+
+# 38. gradle/wrapper/gradle-wrapper.jar (binary - create as empty placeholder)
+# Note: In production, you'd download the actual JAR from Gradle's distribution
+```
+
+**Better approach: Update the workflow to use Gradle wrapper from Android SDK or download it:**
+
+Modify `.github/workflows/android-build.yml` (line 56-77) to properly initialize Gradle:
+
+```yaml
+- name: Execute Python script to prepare project
+  run: |
+    echo "🚀 Executando script Python para preparar o projeto..."
+    python3 criar_gerfrota_fretes_v3.py
+    
+    echo "🔍 Verificando estrutura de arquivos gerada..."
+    ls -la
+    
+    if [ ! -d "./GerFrotaFretesApp" ]; then
+      echo "❌ ERRO CRÍTICO: O diretório 'GerFrotaFretesApp' não foi criado pelo script Python!"
+      exit 1
+    fi
+    
+    # Create gradlew if it doesn't exist
+    if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
+      echo "⚠️ gradlew não encontrado. Criando wrapper do Gradle..."
+      mkdir -p ./GerFrotaFretesApp/gradle/wrapper
+      
+      # Download gradle wrapper
+      cd ./GerFrotaFretesApp
+      curl -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.sh -o gradlew
+      curl -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.bat -o gradlew.bat
+      curl -L https://services.gradle.org/distributions/gradle-8.4-bin.zip -o gradle-8.4.zip
+      
+      # Create wrapper properties
+      cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+      
+      cd ..
+      
+      if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
+        echo "❌ Falha ao criar gradlew!"
+        exit 1
+      fi
+    fi
+    
+    echo "✅ Estrutura do projeto gerada com sucesso!"
+  working-directory: .
+```
+
+**Recommended fix in Python script:**
+
+Add to `criar_gerfrota_fretes_v3.py` before line 2310:
+
+```python
+# 36. Create gradle wrapper files
+import urllib.request
+
+# Download and include gradlew
+try:
+    gradlew_url = "https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.sh"
+    A["gradlew"] = urllib.request.urlopen(gradlew_url).read().decode('utf-8')
+except:
+    # Fallback minimal wrapper
+    A["gradlew"] = "#!/bin/sh\nexec gradle \"$@\"\n"
+
+# gradle/wrapper/gradle-wrapper.properties
+A["gradle/wrapper/gradle-wrapper.properties"] = r'''distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+'''
+```
+
+Then update the create function to make `gradlew` executable:
+
+```python
+# Add after line 2333 (after file creation loop):
+import os
+import stat
+
+# Make gradlew executable
+gradlew_path = os.path.join(PROJETO, "gradlew")
+if os.path.exists(gradlew_path):
+    st = os.stat(gradlew_path)
+    os.chmod(gradlew_path, st.st_mode | stat.S_IEXEC)
+    print(f"  [chmod] gradlew executável")
+```
+
+This ensures the `gradlew` script exists and is executable, allowing Gradle builds to proceed successfully.
