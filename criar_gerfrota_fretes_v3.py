@@ -5,11 +5,9 @@
 GERADOR DO PROJETO GerFrota Fretes v8.0 - VERSÃO FINAL COMPLETA
 =============================================================
 App Android para gestão de fretes com todas as funcionalidades
-
-USO: python3 criar_gerfrota_fretes_v8.py
+USO: python3 criar_gerfrota_fretes_v3.py
 =============================================================
 """
-
 import os
 import sys
 
@@ -73,11 +71,13 @@ android {
 
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.4" }
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -88,7 +88,7 @@ android {
             )
         }
     }
-
+    
     packagingOptions {
         resources {
             pickFirsts += listOf(
@@ -119,7 +119,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-    
     implementation("com.google.api-client:google-api-client-android:2.2.0") {
         exclude(group = "org.apache.httpcomponents")
     }
@@ -146,7 +145,7 @@ A["app/src/main/AndroidManifest.xml"] = r'''<?xml version="1.0" encoding="utf-8"
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
-    
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -164,7 +163,7 @@ A["app/src/main/AndroidManifest.xml"] = r'''<?xml version="1.0" encoding="utf-8"
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -346,6 +345,7 @@ interface PlacaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(placas: List<PlacaEntity>)
     @Update suspend fun update(placa: PlacaEntity)
     @Delete suspend fun delete(placa: PlacaEntity)
+    
     @Query("DELETE FROM placas WHERE placa = :placa") suspend fun deleteByPlaca(placa: String)
     @Query("SELECT * FROM placas WHERE ativa = 1 ORDER BY dataCadastro DESC") fun getAllAtivas(): Flow<List<PlacaEntity>>
     @Query("SELECT * FROM placas ORDER BY dataCadastro DESC") fun getAll(): Flow<List<PlacaEntity>>
@@ -370,38 +370,48 @@ interface FreteDao {
     @Delete suspend fun delete(frete: FreteEntity)
     @Query("DELETE FROM fretes") suspend fun deleteAll()
     @Query("SELECT COUNT(*) FROM fretes") suspend fun count(): Int
+    
     @Query("SELECT * FROM fretes ORDER BY id DESC") fun getAll(): Flow<List<FreteEntity>>
     @Query("SELECT * FROM fretes WHERE id = :id") suspend fun getById(id: Long): FreteEntity?
     @Query("SELECT * FROM fretes WHERE recebido = 0 ORDER BY id DESC") fun getNaoRecebidos(): Flow<List<FreteEntity>>
     @Query("SELECT * FROM fretes WHERE transportadora = :transportadora ORDER BY id DESC") fun getPorTransportadora(transportadora: String): Flow<List<FreteEntity>>
     @Query("SELECT * FROM fretes WHERE placa = :placa ORDER BY id DESC") fun getPorPlaca(placa: String): Flow<List<FreteEntity>>
+    
     @Query("SELECT transportadora, SUM(saldoFrete) as total FROM fretes WHERE recebido = 0 GROUP BY transportadora ORDER BY total DESC")
     fun saldoPorTransportadora(): Flow<List<SaldoTransportadora>>
+    
     @Query("SELECT SUM(saldoFrete) FROM fretes WHERE recebido = 0") fun saldoTotalAReceber(): Flow<Double?>
     @Query("SELECT SUM(adiantamento) FROM fretes") fun totalAdiantamentos(): Flow<Double?>
+    
     @Query("""
         SELECT placa, COUNT(*) as totalFretes, SUM(valorFrete) as totalValor, SUM(adiantamento) as totalAdiantamento,
-               SUM(saldoFrete) as totalSaldo, SUM(CASE WHEN recebido = 1 THEN saldoFrete ELSE 0 END) as totalRecebido
+        SUM(saldoFrete) as totalSaldo, SUM(CASE WHEN recebido = 1 THEN saldoFrete ELSE 0 END) as totalRecebido
         FROM fretes GROUP BY placa ORDER BY totalSaldo DESC
     """)
     fun resumoPorPlaca(): Flow<List<PlacaResumo>>
+    
     @Query("SELECT * FROM fretes WHERE placa = :placa ORDER BY id DESC") fun getFretesPorPlaca(placa: String): Flow<List<FreteEntity>>
     @Query("SELECT DISTINCT transportadora FROM fretes ORDER BY transportadora") fun getAllTransportadoras(): Flow<List<String>>
+    
     @Query("""
         SELECT formaPgtoAdiant as formaPagto, COUNT(*) as totalFretes, SUM(adiantamento) as totalValor
         FROM fretes WHERE adiantamento > 0 GROUP BY formaPgtoAdiant ORDER BY totalValor DESC
     """)
     fun resumoAdiantamentoPorForma(): Flow<List<ResumoFormaPagto>>
+    
     @Query("""
         SELECT formaPgtoSaldo as formaPagto, COUNT(*) as totalFretes, SUM(saldoFrete) as totalValor
         FROM fretes WHERE saldoFrete > 0 AND recebido = 0 GROUP BY formaPgtoSaldo ORDER BY totalValor DESC
     """)
     fun resumoSaldoPorForma(): Flow<List<ResumoFormaPagto>>
+    
     @Query("SELECT * FROM fretes WHERE formaPgtoAdiant = :forma ORDER BY id DESC") fun getFretesPorFormaAdiant(forma: String): Flow<List<FreteEntity>>
     @Query("SELECT * FROM fretes WHERE formaPgtoSaldo = :forma AND recebido = 0 ORDER BY id DESC") fun getFretesPorFormaSaldo(forma: String): Flow<List<FreteEntity>>
     @Query("SELECT * FROM fretes WHERE data LIKE :mes ORDER BY id DESC") fun getFretesPorMes(mes: String): Flow<List<FreteEntity>>
+    
     @Query("SELECT COUNT(*) FROM fretes WHERE recebido = 1 AND data LIKE :mes") suspend fun countRecebidosPorMes(mes: String): Int
     @Query("SELECT COUNT(*) FROM fretes WHERE data LIKE :mes") suspend fun countFretesPorMes(mes: String): Int
+    
     @Query("SELECT * FROM fretes WHERE isDraft = 1 ORDER BY updatedAt DESC LIMIT 1") fun getRascunho(): Flow<FreteEntity?>
     @Query("DELETE FROM fretes WHERE isDraft = 1") suspend fun deleteRascunhos()
 }
@@ -449,7 +459,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "gerfrota.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
             }
     }
 }
@@ -469,6 +479,7 @@ class Repository(private val dao: FreteDao, private val placaDao: PlacaDao) {
     val resumoPorPlaca: Flow<List<PlacaResumo>> = dao.resumoPorPlaca()
     val resumoAdiantamentoPorForma: Flow<List<ResumoFormaPagto>> = dao.resumoAdiantamentoPorForma()
     val resumoSaldoPorForma: Flow<List<ResumoFormaPagto>> = dao.resumoSaldoPorForma()
+    
     val placasAtivas: Flow<List<PlacaEntity>> = placaDao.getAllAtivas()
     val placasLista: Flow<List<String>> = placaDao.getAllPlacasAtivas()
     val todasPlacas: Flow<List<PlacaEntity>> = placaDao.getAll()
@@ -513,25 +524,36 @@ import java.security.MessageDigest
 object AuthManager {
     private const val PREFS = "gerfrota_auth"
     private fun prefs(ctx: Context): SharedPreferences = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
     private fun hash(password: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         return md.digest(password.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     }
+
     fun registrar(ctx: Context, email: String, password: String): Boolean {
         if (email.isBlank() || password.length < 4) return false
-        prefs(ctx).edit().apply { putString("email", email.trim().lowercase()); putString("pass_hash", hash(password)); putBoolean("logged", true); apply() }
+        prefs(ctx).edit().apply {
+            putString("email", email.trim().lowercase())
+            putString("pass_hash", hash(password))
+            putBoolean("logged", true)
+            apply()
+        }
         return true
     }
+
     fun login(ctx: Context, email: String, password: String): LoginResult {
         val p = prefs(ctx)
         val savedEmail = p.getString("email", null)
         val savedHash = p.getString("pass_hash", null)
+
         if (savedEmail == null || savedHash == null) return LoginResult.NOT_REGISTERED
         if (savedEmail != email.trim().lowercase()) return LoginResult.WRONG_EMAIL
         if (savedHash != hash(password)) return LoginResult.WRONG_PASSWORD
+
         p.edit().putBoolean("logged", true).apply()
         return LoginResult.SUCCESS
     }
+
     fun logout(ctx: Context) { prefs(ctx).edit().putBoolean("logged", false).apply() }
     fun isLogged(ctx: Context): Boolean = prefs(ctx).getBoolean("logged", false)
     fun getEmail(ctx: Context): String? = prefs(ctx).getString("email", null)
@@ -559,6 +581,7 @@ object LocalBackupManager {
             val fileName = "gerfrota_backup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale("pt", "BR")).format(Date())}.json"
             val backupDir = File(context.filesDir, "backups").apply { if (!exists()) mkdirs() }
             val backupFile = File(backupDir, fileName)
+            
             val jsonArray = JSONArray()
             fretes.forEach { f ->
                 jsonArray.put(JSONObject().apply {
@@ -579,6 +602,7 @@ object LocalBackupManager {
         runCatching {
             val file = File(filePath)
             if (!file.exists()) return@withContext Pair(false, emptyList())
+            
             val jsonArray = JSONArray(file.readText())
             val fretes = mutableListOf<FreteEntity>()
             for (i in 0 until jsonArray.length()) {
@@ -627,14 +651,19 @@ object PreferencesManager {
 
     suspend fun saveFiltroPeriodo(context: Context, periodo: String) { context.dataStore.edit { it[Keys.FILTRO_PERIODO] = periodo } }
     fun getFiltroPeriodo(context: Context): Flow<String?> = context.dataStore.data.map { it[Keys.FILTRO_PERIODO] }
+    
     suspend fun saveFiltroPlaca(context: Context, placa: String) { context.dataStore.edit { it[Keys.FILTRO_PLACA] = placa } }
     fun getFiltroPlaca(context: Context): Flow<String?> = context.dataStore.data.map { it[Keys.FILTRO_PLACA] }
+    
     suspend fun saveFiltroStatus(context: Context, status: String) { context.dataStore.edit { it[Keys.FILTRO_STATUS] = status } }
     fun getFiltroStatus(context: Context): Flow<String?> = context.dataStore.data.map { it[Keys.FILTRO_STATUS] }
+    
     suspend fun saveFiltroTransportadora(context: Context, transportadora: String) { context.dataStore.edit { it[Keys.FILTRO_TRANSPORTADORA] = transportadora } }
     fun getFiltroTransportadora(context: Context): Flow<String?> = context.dataStore.data.map { it[Keys.FILTRO_TRANSPORTADORA] }
+    
     suspend fun saveUltimoBackup(context: Context, timestamp: Long) { context.dataStore.edit { it[Keys.ULTIMO_BACKUP] = timestamp } }
     fun getUltimoBackup(context: Context): Flow<Long?> = context.dataStore.data.map { it[Keys.ULTIMO_BACKUP] }
+    
     suspend fun saveContaDrive(context: Context, conta: String) { context.dataStore.edit { it[Keys.CONTA_DRIVE] = conta } }
     fun getContaDrive(context: Context): Flow<String?> = context.dataStore.data.map { it[Keys.CONTA_DRIVE] }
 }
@@ -648,11 +677,14 @@ import java.util.Locale
 
 object MoneyFormatter {
     private val format = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    
     fun format(value: Double): String = format.format(value)
+    
     fun parse(text: String): Double {
         val cleaned = text.replace("R$", "").replace(".", "").replace(",", ".").trim()
         return cleaned.toDoubleOrNull() ?: 0.0
     }
+    
     fun applyMask(text: String): String {
         val digits = text.filter { it.isDigit() }
         val value = digits.toDoubleOrNull()?.div(100) ?: 0.0
@@ -675,6 +707,7 @@ object VoiceInputHelper {
         putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale o valor...")
         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
     }
+
     fun parseNumber(text: String): String {
         val cleaned = text.lowercase(Locale("pt","BR"))
             .replace("reais", "").replace("real", "")
@@ -713,6 +746,7 @@ object PdfExporter {
             val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
             val pdf = PdfDocument()
+            
             val pageW = 595; val pageH = 842; val margin = 30f
             val pTitle = Paint().apply { color = Color.parseColor("#102A43"); textSize = 20f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
             val pSub = Paint().apply { color = Color.parseColor("#0F766E"); textSize = 11f; isAntiAlias = true }
@@ -723,26 +757,34 @@ object PdfExporter {
             val pBgA = Paint().apply { color = Color.parseColor("#F5F5F5") }
             val pBord = Paint().apply { color = Color.parseColor("#BDBDBD"); style = Paint.Style.STROKE; strokeWidth = 0.5f }
             val pTot = Paint().apply { color = Color.parseColor("#102A43"); textSize = 12f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
+
             val colX = floatArrayOf(margin, margin + 50, margin + 100, margin + 180, margin + 290, margin + 340, margin + 390, margin + 440, margin + 485)
             val headers = arrayOf("Data", "Placa", "Transportadora", "Rota", "Valor", "Adiant.", "Saldo", "Status")
             val rowH = 16f; val headerY = 100f; val rowsPerPage = 40
+            
             val totalPag = kotlin.math.max(1, kotlin.math.ceil(fretes.size.toDouble() / rowsPerPage).toInt())
             var tV = 0.0; var tA = 0.0; var tS = 0.0; var tRecebido = 0.0
+
             for (pg in 0 until totalPag) {
                 val page = pdf.startPage(PdfDocument.PageInfo.Builder(pageW, pageH, pg).create())
                 val c = page.canvas
+                
                 c.drawText(titulo, margin, 40f, pTitle)
                 if (periodo.isNotEmpty()) c.drawText("Período: $periodo", margin, 58f, pSub)
                 c.drawText("Gerado em ${df.format(Date())} - Página ${pg + 1} de $totalPag", margin, 72f, pSub)
                 c.drawLine(margin, 82f, pageW - margin, 82f, pBord)
+                
                 c.drawRect(margin, headerY - 12f, pageW - margin, headerY + 4f, pBgH)
                 headers.forEachIndexed { i, h -> c.drawText(h, colX[i], headerY, pHead) }
+                
                 val ini = pg * rowsPerPage
                 val fim = kotlin.math.min(ini + rowsPerPage, fretes.size)
                 var y = headerY + rowH
+                
                 for (idx in ini until fim) {
                     val f = fretes[idx]
                     if ((idx - ini) % 2 == 1) c.drawRect(margin, y - 10f, pageW - margin, y + 6f, pBgA)
+                    
                     c.drawText(f.data, colX[0], y, pCell)
                     c.drawText(f.placa, colX[1], y, pCell)
                     c.drawText(f.transportadora.ifBlank { "-" }, colX[2], y, pCell)
@@ -751,11 +793,13 @@ object PdfExporter {
                     c.drawText(nf.format(f.adiantamento), colX[5], y, pCell)
                     c.drawText(nf.format(f.saldoFrete), colX[6], y, if (f.saldoFrete > 0) pBold else pCell)
                     c.drawText(if (f.recebido) "Recebido" else "Pendente", colX[7], y, if (f.recebido) Paint().apply { color = Color.GREEN; textSize = 8f } else Paint().apply { color = Color.RED; textSize = 8f })
+                    
                     tV += f.valorFrete; tA += f.adiantamento; tS += f.saldoFrete
                     if (f.recebido) tRecebido += f.saldoFrete
                     y += rowH
                 }
                 c.drawRect(margin, headerY - 12f, pageW - margin, y, pBord)
+                
                 if (pg == totalPag - 1) {
                     val ty = y + 25f
                     c.drawText("RESUMO:", margin, ty, pTot)
@@ -767,11 +811,13 @@ object PdfExporter {
                 }
                 pdf.finishPage(page)
             }
+            
             val fileName = "GerFrota_Relatorio_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale("pt","BR")).format(Date())}.pdf"
             val folder = File(context.filesDir, "relatorios").apply { if (!exists()) mkdirs() }
             val file = File(folder, fileName)
             FileOutputStream(file).use { out -> pdf.writeTo(out) }
             pdf.close()
+            
             PdfResult(true, "Relatório gerado!", FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
         }.getOrElse { PdfResult(false, "Erro: ${it.message}") }
     }
@@ -781,6 +827,7 @@ object PdfExporter {
             val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
             val pdf = PdfDocument()
+            
             val pageW = 595; val pageH = 842; val margin = 30f
             val pTitle = Paint().apply { color = Color.parseColor("#102A43"); textSize = 20f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
             val pSub = Paint().apply { color = Color.parseColor("#0F766E"); textSize = 11f; isAntiAlias = true }
@@ -791,36 +838,46 @@ object PdfExporter {
             val pBgA = Paint().apply { color = Color.parseColor("#F5F5F5") }
             val pBord = Paint().apply { color = Color.parseColor("#BDBDBD"); style = Paint.Style.STROKE; strokeWidth = 0.5f }
             val pTot = Paint().apply { color = Color.parseColor("#102A43"); textSize = 12f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
+
             val colX = floatArrayOf(margin, margin + 60, margin + 120, margin + 200, margin + 280, margin + 360, margin + 440)
             val headers = arrayOf("Data", "Placa", "Transportadora", "Rota", "Forma Pgto", "Valor Adiant.")
             val rowH = 16f; val headerY = 100f; val rowsPerPage = 40
+            
             val fretesAdiant = fretes.filter { it.adiantamento > 0 }
             val totalPag = kotlin.math.max(1, kotlin.math.ceil(fretesAdiant.size.toDouble() / rowsPerPage).toInt())
             var tA = 0.0
+
             for (pg in 0 until totalPag) {
                 val page = pdf.startPage(PdfDocument.PageInfo.Builder(pageW, pageH, pg).create())
                 val c = page.canvas
+                
                 c.drawText("Relatório de Adiantamentos por Forma de Pagamento", margin, 40f, pTitle)
                 c.drawText("Gerado em ${df.format(Date())} - Página ${pg + 1} de $totalPag", margin, 58f, pSub)
                 c.drawLine(margin, 70f, pageW - margin, 70f, pBord)
+                
                 c.drawRect(margin, headerY - 12f, pageW - margin, headerY + 4f, pBgH)
                 headers.forEachIndexed { i, h -> c.drawText(h, colX[i], headerY, pHead) }
+                
                 val ini = pg * rowsPerPage
                 val fim = kotlin.math.min(ini + rowsPerPage, fretesAdiant.size)
                 var y = headerY + rowH
+                
                 for (idx in ini until fim) {
                     val f = fretesAdiant[idx]
                     if ((idx - ini) % 2 == 1) c.drawRect(margin, y - 10f, pageW - margin, y + 6f, pBgA)
+                    
                     c.drawText(f.data, colX[0], y, pCell)
                     c.drawText(f.placa, colX[1], y, pCell)
                     c.drawText(f.transportadora.ifBlank { "-" }, colX[2], y, pCell)
                     c.drawText("${f.origem.ifBlank{"-"}} -> ${f.destino.ifBlank{"-"}}".take(18), colX[3], y, pCell)
                     c.drawText(f.formaPgtoAdiant, colX[4], y, pCell)
                     c.drawText(nf.format(f.adiantamento), colX[5], y, pBold)
+                    
                     tA += f.adiantamento
                     y += rowH
                 }
                 c.drawRect(margin, headerY - 12f, pageW - margin, y, pBord)
+                
                 if (pg == totalPag - 1) {
                     val ty = y + 25f
                     c.drawText("RESUMO POR FORMA DE PAGAMENTO:", margin, ty, pTot)
@@ -830,11 +887,13 @@ object PdfExporter {
                 }
                 pdf.finishPage(page)
             }
+            
             val fileName = "GerFrota_Adiantamentos_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale("pt","BR")).format(Date())}.pdf"
             val folder = File(context.filesDir, "relatorios").apply { if (!exists()) mkdirs() }
             val file = File(folder, fileName)
             FileOutputStream(file).use { out -> pdf.writeTo(out) }
             pdf.close()
+            
             PdfResult(true, "Relatório de adiantamentos gerado!", FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
         }.getOrElse { PdfResult(false, "Erro: ${it.message}") }
     }
@@ -844,6 +903,7 @@ object PdfExporter {
             val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
             val pdf = PdfDocument()
+            
             val pageW = 595; val pageH = 842; val margin = 30f
             val pTitle = Paint().apply { color = Color.parseColor("#102A43"); textSize = 20f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
             val pSub = Paint().apply { color = Color.parseColor("#0F766E"); textSize = 11f; isAntiAlias = true }
@@ -854,36 +914,46 @@ object PdfExporter {
             val pBgA = Paint().apply { color = Color.parseColor("#F5F5F5") }
             val pBord = Paint().apply { color = Color.parseColor("#BDBDBD"); style = Paint.Style.STROKE; strokeWidth = 0.5f }
             val pTot = Paint().apply { color = Color.parseColor("#102A43"); textSize = 12f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
+
             val colX = floatArrayOf(margin, margin + 60, margin + 120, margin + 200, margin + 280, margin + 360, margin + 440)
             val headers = arrayOf("Data", "Placa", "Transportadora", "Rota", "Forma Pgto", "Saldo")
             val rowH = 16f; val headerY = 100f; val rowsPerPage = 40
+            
             val fretesSaldo = fretes.filter { it.saldoFrete > 0 && !it.recebido }
             val totalPag = kotlin.math.max(1, kotlin.math.ceil(fretesSaldo.size.toDouble() / rowsPerPage).toInt())
             var tS = 0.0
+
             for (pg in 0 until totalPag) {
                 val page = pdf.startPage(PdfDocument.PageInfo.Builder(pageW, pageH, pg).create())
                 val c = page.canvas
+                
                 c.drawText("Relatório de Saldo a Receber por Forma de Pagamento", margin, 40f, pTitle)
                 c.drawText("Gerado em ${df.format(Date())} - Página ${pg + 1} de $totalPag", margin, 58f, pSub)
                 c.drawLine(margin, 70f, pageW - margin, 70f, pBord)
+                
                 c.drawRect(margin, headerY - 12f, pageW - margin, headerY + 4f, pBgH)
                 headers.forEachIndexed { i, h -> c.drawText(h, colX[i], headerY, pHead) }
+                
                 val ini = pg * rowsPerPage
                 val fim = kotlin.math.min(ini + rowsPerPage, fretesSaldo.size)
                 var y = headerY + rowH
+                
                 for (idx in ini until fim) {
                     val f = fretesSaldo[idx]
                     if ((idx - ini) % 2 == 1) c.drawRect(margin, y - 10f, pageW - margin, y + 6f, pBgA)
+                    
                     c.drawText(f.data, colX[0], y, pCell)
                     c.drawText(f.placa, colX[1], y, pCell)
                     c.drawText(f.transportadora.ifBlank { "-" }, colX[2], y, pCell)
                     c.drawText("${f.origem.ifBlank{"-"}} -> ${f.destino.ifBlank{"-"}}".take(18), colX[3], y, pCell)
                     c.drawText(f.formaPgtoSaldo, colX[4], y, pCell)
                     c.drawText(nf.format(f.saldoFrete), colX[5], y, pBold)
+                    
                     tS += f.saldoFrete
                     y += rowH
                 }
                 c.drawRect(margin, headerY - 12f, pageW - margin, y, pBord)
+                
                 if (pg == totalPag - 1) {
                     val ty = y + 25f
                     c.drawText("RESUMO POR FORMA DE PAGAMENTO:", margin, ty, pTot)
@@ -893,11 +963,13 @@ object PdfExporter {
                 }
                 pdf.finishPage(page)
             }
+            
             val fileName = "GerFrota_Saldo_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale("pt","BR")).format(Date())}.pdf"
             val folder = File(context.filesDir, "relatorios").apply { if (!exists()) mkdirs() }
             val file = File(folder, fileName)
             FileOutputStream(file).use { out -> pdf.writeTo(out) }
             pdf.close()
+            
             PdfResult(true, "Relatório de saldo gerado!", FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
         }.getOrElse { PdfResult(false, "Erro: ${it.message}") }
     }
@@ -940,39 +1012,55 @@ class DriveBackupManager(private val context: Context) {
         val am = AccountManager.get(context)
         return am.getAccountsByType("com.google").firstOrNull()?.name
     }
+
     private fun buildDrive(accountEmail: String): Drive {
         val credential = GoogleAccountCredential.usingOAuth2(context, listOf(DriveScopes.DRIVE_FILE)).apply { selectedAccountName = accountEmail }
         return Drive.Builder(NetHttpTransport(), GsonFactory.getDefaultInstance(), credential).setApplicationName("GerFrotaFretes").build()
     }
+
     suspend fun uploadBackupParaDrive(backupPath: String): BackupDriveResult = withContext(Dispatchers.IO) {
         runCatching {
             val accountEmail = getGoogleAccount() ?: return@withContext BackupDriveResult.Error("Nenhuma conta Google no dispositivo.")
             val drive = buildDrive(accountEmail)
+            
             val backupFile = java.io.File(backupPath)
             val fileInputStream = FileInputStream(backupFile)
             val mediaContent = InputStreamContent("application/json", fileInputStream)
+            
             val metadata = File().apply { name = "gerfrota_backup_${System.currentTimeMillis()}.json"; mimeType = "application/json" }
+            
             val query = "name contains 'gerfrota_backup' and mimeType='application/json' and trashed=false"
             val existing = drive.files().list().setQ(query).setSpaces("drive").setFields("files(id, name)").execute()
-            if (existing.files.isNullOrEmpty()) drive.files().create(metadata, mediaContent).setFields("id").execute()
-            else drive.files().update(existing.files[0].id, metadata, mediaContent).execute()
+            
+            if (existing.files.isNullOrEmpty()) {
+                drive.files().create(metadata, mediaContent).setFields("id").execute()
+            } else {
+                drive.files().update(existing.files[0].id, metadata, mediaContent).execute()
+            }
             fileInputStream.close()
+            
             BackupDriveResult.Sucesso("Backup enviado para Drive ($accountEmail)")
         }.getOrElse { BackupDriveResult.Error("Erro no upload: ${it.message}") }
     }
+
     suspend fun downloadBackupDoDrive(): BackupDriveResult = withContext(Dispatchers.IO) {
         runCatching {
             val accountEmail = getGoogleAccount() ?: return@withContext BackupDriveResult.Error("Nenhuma conta Google no dispositivo.")
             val drive = buildDrive(accountEmail)
+            
             val query = "name contains 'gerfrota_backup' and mimeType='application/json' and trashed=false"
             val files = drive.files().list().setQ(query).setSpaces("drive").setFields("files(id, name)").setOrderBy("createdTime desc").execute()
+            
             if (files.files.isNullOrEmpty()) return@withContext BackupDriveResult.Error("Nenhum backup encontrado no Drive.")
+            
             val fileId = files.files[0].id
             val inputStream = drive.files().get(fileId).executeMediaAsInputStream()
+            
             val backupDir = context.filesDir.resolve("backups").apply { if (!exists()) mkdirs() }
             val backupFile = backupDir.resolve("gerfrota_backup_downloaded.json")
             backupFile.outputStream().use { it.write(inputStream.readBytes()) }
             inputStream.close()
+            
             BackupDriveResult.Sucesso("Backup baixado do Drive: ${backupFile.absolutePath}")
         }.getOrElse { BackupDriveResult.Error("Erro no download: ${it.message}") }
     }
@@ -1028,16 +1116,20 @@ fun LoginScreen(repo: Repository, onLoginSuccess: () -> Unit) {
             Text("GerFrota Fretes", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary, textAlign = TextAlign.Center)
             Text(if (isRegisterMode) "Crie sua conta" else "Entre com sua conta", fontSize = 15.sp, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
             Spacer(Modifier.height(32.dp))
+
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(20.dp)) {
                     OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("E-mail") }, leadingIcon = { Icon(Icons.Default.Email, null) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), singleLine = true)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Senha") }, leadingIcon = { Icon(Icons.Default.Lock, null) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true)
+                    
                     if (isRegisterMode) {
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = { Text("Confirmar senha") }, leadingIcon = { Icon(Icons.Default.Lock, null) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true)
                     }
+                    
                     Spacer(Modifier.height(20.dp))
+                    
                     Button(onClick = {
                         if (loading) return@Button
                         loading = true
@@ -1058,6 +1150,7 @@ fun LoginScreen(repo: Repository, onLoginSuccess: () -> Unit) {
                         if (loading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                         else Text(if (isRegisterMode) "CRIAR CONTA" else "ENTRAR", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
+                    
                     if (AuthManager.isRegistered(context)) {
                         Spacer(Modifier.height(8.dp))
                         TextButton(onClick = { isRegisterMode = !isRegisterMode }, modifier = Modifier.fillMaxWidth()) { Text(if (isRegisterMode) "Já tenho conta - Entrar" else "Não tenho conta - Criar agora", fontSize = 13.sp) }
@@ -1093,7 +1186,7 @@ fun MainScreen(repo: Repository, userEmail: String, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
+    
     val bottomNavItems = listOf(
         BottomNavItem("Início", Icons.Default.Home, "inicio"),
         BottomNavItem("Fretes", Icons.Default.LocalShipping, "fretes"),
@@ -1209,6 +1302,7 @@ fun InicioScreen(
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
     val currentMonth = SimpleDateFormat("MM/yyyy", Locale("pt", "BR")).format(Date())
     val fretesDoMes by repo.fretesPorMes(currentMonth).collectAsState(initial = emptyList())
+    
     val totalRecebidos = remember(fretesDoMes) { fretesDoMes.count { it.recebido } }
     val fretesNaoRecebidos = fretes.count { !it.recebido }
 
@@ -1335,7 +1429,7 @@ fun FretesScreen(repo: Repository, onNavigateToNovoFrete: () -> Unit, onNavigate
     val fretes by repo.fretes.collectAsState(initial = emptyList())
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
     var searchQuery by remember { mutableStateOf("") }
-
+    
     val fretesFiltrados = remember(fretes, searchQuery) {
         fretes.filter { searchQuery.isEmpty() || it.placa.contains(searchQuery, ignoreCase = true) || it.transportadora.contains(searchQuery, ignoreCase = true) || it.origem.contains(searchQuery, ignoreCase = true) || it.destino.contains(searchQuery, ignoreCase = true) }
     }
@@ -1354,6 +1448,7 @@ fun FretesScreen(repo: Repository, onNavigateToNovoFrete: () -> Unit, onNavigate
                 trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, contentDescription = "Limpar") } },
                 singleLine = true, shape = RoundedCornerShape(12.dp)
             )
+            
             if (fretesFiltrados.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1567,9 +1662,10 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
     var showFormaAdiantDropdown by remember { mutableStateOf(false) }
     var showFormaSaldoDropdown by remember { mutableStateOf(false) }
     var erroAdiantamento by remember { mutableStateOf<String?>(null) }
-
+    
     val placas by repo.placasLista.collectAsState(initial = emptyList())
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    
     val valorFreteDouble = MoneyFormatter.parse(valorFrete)
     val adiantamentoDouble = MoneyFormatter.parse(adiantamento)
     val saldoFrete = if (recebido) 0.0 else (valorFreteDouble - adiantamentoDouble)
@@ -1585,6 +1681,7 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Text("Dados da viagem", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                
                 ExposedDropdownMenuBox(expanded = showPlacaDropdown, onExpandedChange = { showPlacaDropdown = it }) {
                     OutlinedTextField(value = placa, onValueChange = { placa = it }, modifier = Modifier.fillMaxWidth().menuAnchor(), label = { Text("Placa") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showPlacaDropdown) })
                     ExposedDropdownMenu(expanded = showPlacaDropdown, onDismissRequest = { showPlacaDropdown = false }) {
@@ -1597,11 +1694,16 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
                 OutlinedTextField(value = origem, onValueChange = { origem = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Origem") })
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(value = destino, onValueChange = { destino = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Destino") })
+                
                 Spacer(Modifier.height(24.dp))
                 Text("Valores", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                
                 OutlinedTextField(value = valorFrete, onValueChange = { valorFrete = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Valor do frete") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), leadingIcon = { Text("R$", modifier = Modifier.padding(start = 12.dp)) })
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(value = adiantamento, onValueChange = { adiantamento = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Adiantamento") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), leadingIcon = { Text("R$", modifier = Modifier.padding(start = 12.dp)) }, isError = erroAdiantamento != null, supportingText = { if (erroAdiantamento != null) Text(erroAdiantamento, color = MaterialTheme.colorScheme.error) })
+                
+                // ✅ CORREÇÃO: Atribuição local para evitar erro de smart cast em propriedade delegada
+                OutlinedTextField(value = adiantamento, onValueChange = { adiantamento = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Adiantamento") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), leadingIcon = { Text("R$", modifier = Modifier.padding(start = 12.dp)) }, isError = erroAdiantamento != null, supportingText = { val err = erroAdiantamento; if (err != null) Text(err, color = MaterialTheme.colorScheme.error) })
+                
                 Spacer(Modifier.height(16.dp))
                 Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = GerFrotaColors.Secondary.copy(alpha = 0.1f))) {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -1609,8 +1711,10 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
                         Text(nf.format(saldoFrete), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = GerFrotaColors.Secondary)
                     }
                 }
+                
                 Spacer(Modifier.height(24.dp))
                 Text("Recebimento", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                
                 ExposedDropdownMenuBox(expanded = showFormaAdiantDropdown, onExpandedChange = { showFormaAdiantDropdown = it }) {
                     OutlinedTextField(value = formaPgtoAdiant, onValueChange = {}, modifier = Modifier.fillMaxWidth().menuAnchor(), label = { Text("Forma de pagamento - Adiantamento") }, readOnly = true, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showFormaAdiantDropdown) })
                     ExposedDropdownMenu(expanded = showFormaAdiantDropdown, onDismissRequest = { showFormaAdiantDropdown = false }) {
@@ -1624,6 +1728,7 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
                         FormasPagamento.opcoes.forEach { forma -> DropdownMenuItem(text = { Text(forma) }, onClick = { formaPgtoSaldo = forma; showFormaSaldoDropdown = false }) }
                     }
                 }
+                
                 Spacer(Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = recebido, onCheckedChange = { recebido = it })
@@ -1635,6 +1740,7 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
                     }
                 }
             }
+            
             Button(onClick = {
                 scope.launch {
                     val frete = FreteEntity(data = data, placa = placa, transportadora = transportadora, origem = origem, destino = destino, valorFrete = valorFreteDouble, adiantamento = adiantamentoDouble, formaPgtoAdiant = formaPgtoAdiant, saldoFrete = saldoFrete, formaPgtoSaldo = formaPgtoSaldo, recebido = recebido)
@@ -1696,6 +1802,7 @@ fun DetalheFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit, onEd
                     }
                 }
             }
+            
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(freteAtual.placa, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -1707,6 +1814,7 @@ fun DetalheFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit, onEd
                     }
                 }
             }
+            
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Valores", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
@@ -1717,6 +1825,7 @@ fun DetalheFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit, onEd
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Saldo a receber", style = MaterialTheme.typography.bodyLarge, color = GerFrotaColors.Primary); Text(nf.format(freteAtual.saldoFrete), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = GerFrotaColors.Secondary) }
                 }
             }
+            
             if (!freteAtual.recebido) {
                 Button(onClick = { showConfirmDialog = true }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = GerFrotaColors.Secondary)) {
                     Icon(Icons.Default.Check, contentDescription = null)
@@ -1775,6 +1884,7 @@ fun EditarFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit) {
     val fretes by repo.fretes.collectAsState(initial = emptyList())
     val frete = fretes.find { it.id == freteId }
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+
     if (frete == null) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
 
     var placa by remember { mutableStateOf(frete.placa) }
@@ -1801,9 +1911,11 @@ fun EditarFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit) {
             OutlinedTextField(value = destino, onValueChange = { destino = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Destino") })
             OutlinedTextField(value = valorFrete, onValueChange = { valorFrete = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Valor do frete") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             OutlinedTextField(value = adiantamento, onValueChange = { adiantamento = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Adiantamento") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = GerFrotaColors.Secondary.copy(alpha = 0.1f))) {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("Saldo do frete", style = MaterialTheme.typography.titleMedium); Text(nf.format(saldoFrete), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = GerFrotaColors.Secondary) }
             }
+            
             ExposedDropdownMenuBox(expanded = showFormaAdiantDropdown, onExpandedChange = { showFormaAdiantDropdown = it }) {
                 OutlinedTextField(value = formaPgtoAdiant, onValueChange = {}, modifier = Modifier.fillMaxWidth().menuAnchor(), label = { Text("Forma de pagamento - Adiantamento") }, readOnly = true, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showFormaAdiantDropdown) })
                 ExposedDropdownMenu(expanded = showFormaAdiantDropdown, onDismissRequest = { showFormaAdiantDropdown = false }) { FormasPagamento.opcoes.forEach { forma -> DropdownMenuItem(text = { Text(forma) }, onClick = { formaPgtoAdiant = forma; showFormaAdiantDropdown = false }) } }
@@ -1812,7 +1924,9 @@ fun EditarFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit) {
                 OutlinedTextField(value = formaPgtoSaldo, onValueChange = {}, modifier = Modifier.fillMaxWidth().menuAnchor(), label = { Text("Forma de pagamento - Saldo") }, readOnly = true, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showFormaSaldoDropdown) })
                 ExposedDropdownMenu(expanded = showFormaSaldoDropdown, onDismissRequest = { showFormaSaldoDropdown = false }) { FormasPagamento.opcoes.forEach { forma -> DropdownMenuItem(text = { Text(forma) }, onClick = { formaPgtoSaldo = forma; showFormaSaldoDropdown = false }) } }
             }
+            
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = recebido, onCheckedChange = { recebido = it }); Text("Marcar como recebido", style = MaterialTheme.typography.bodyLarge) }
+            
             Spacer(Modifier.height(16.dp))
             Button(onClick = {
                 scope.launch {
@@ -1941,6 +2055,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val driveManager = remember { DriveBackupManager(context) }
     val fretes by repo.fretes.collectAsState(initial = emptyList())
+    
     var processando by remember { mutableStateOf(false) }
     var mensagem by remember { mutableStateOf("") }
     var backupPath by remember { mutableStateOf<String?>(null) }
@@ -1965,6 +2080,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit) {
                     }
                 }
             }
+            
             Button(onClick = {
                 processando = true
                 scope.launch {
@@ -1987,6 +2103,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Text("Criar backup local")
             }
+            
             Button(onClick = {
                 if (backupPath == null) return@Button
                 processando = true
@@ -2012,6 +2129,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Text("Enviar para Google Drive")
             }
+            
             OutlinedButton(onClick = {
                 processando = true
                 scope.launch {
@@ -2070,6 +2188,11 @@ fun RelatoriosScreen(repo: Repository, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val fretes by repo.fretes.collectAsState(initial = emptyList())
+    
+    // ✅ CORREÇÃO: Coletar os Flows como estado em vez de tentar acessar .value diretamente
+    val resumoSaldo by repo.resumoSaldoPorForma.collectAsState(initial = emptyList())
+    val resumoAdiant by repo.resumoAdiantamentoPorForma.collectAsState(initial = emptyList())
+    
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
     var selectedReport by remember { mutableStateOf<String?>(null) }
 
@@ -2094,8 +2217,8 @@ fun RelatoriosScreen(repo: Repository, onBack: () -> Unit) {
                     if (selectedReport == null) { Toast.makeText(context, "Selecione um tipo de relatório", Toast.LENGTH_SHORT).show(); return@Button }
                     scope.launch {
                         val resultado = when (selectedReport) {
-                            "saldos" -> PdfExporter.exportarSaldoPorForma(context, repo.resumoSaldoPorForma.value, fretes)
-                            "adiantamentos" -> PdfExporter.exportarAdiantamentoPorForma(context, repo.resumoAdiantamentoPorForma.value, fretes)
+                            "saldos" -> PdfExporter.exportarSaldoPorForma(context, resumoSaldo, fretes)
+                            "adiantamentos" -> PdfExporter.exportarAdiantamentoPorForma(context, resumoAdiant, fretes)
                             else -> PdfExporter.exportar(context, fretes)
                         }
                         if (resultado.success) Toast.makeText(context, "Relatório gerado!", Toast.LENGTH_LONG).show()
@@ -2143,13 +2266,14 @@ import com.gerfrota.fretes.ui.theme.GerFrotaTheme
 
 class MainActivity : ComponentActivity() {
     private val repo by lazy { val db = AppDatabase.get(this); Repository(db.freteDao(), db.placaDao()) }
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             GerFrotaTheme {
                 val isLogged = AuthManager.isLogged(this)
                 val userEmail = AuthManager.getEmail(this) ?: ""
+                
                 if (isLogged) MainScreen(repo = repo, userEmail = userEmail, onLogout = { AuthManager.logout(this); recreate() })
                 else LoginScreen(repo = repo, onLoginSuccess = { recreate() })
             }
@@ -2222,9 +2346,7 @@ A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard
 '''
 
 A["CHANGELOG.md"] = r'''# Changelog - GerFrota Fretes
-
 ## [8.0.0] - 2026-08-20
-
 ### Adicionado
 - Design System Material 3 completo com modo escuro
 - Navegação inferior (Início, Fretes, Financeiro, Mais)
@@ -2238,18 +2360,15 @@ A["CHANGELOG.md"] = r'''# Changelog - GerFrota Fretes
 - Testes unitários e de migração
 - Acessibilidade completa
 - ProGuard para release
-
 ### Melhorado
 - Contraste de cores para acessibilidade
 - Áreas de toque em todos os botões (48dp)
 - ContentDescription em ícones
 - Suporte a fonte ampliada
-
 ### Corrigido
 - Cálculo de saldo com valores negativos
 - Validação de adiantamento maior que frete
 - Filtros preservados ao retornar de edição
-
 ### Segurança
 - Microfone solicitado apenas no contexto de uso
 - Confirmação forte antes de restaurar backup
@@ -2257,11 +2376,9 @@ A["CHANGELOG.md"] = r'''# Changelog - GerFrota Fretes
 '''
 
 A["README.md"] = r'''# GerFrota Fretes
-
 Aplicativo Android para gestão de fretes e transportes.
 
 ## Funcionalidades
-
 - ✅ Cadastro de fretes com máscara monetária
 - ✅ Controle por placa (5 placas pré-cadastradas)
 - ✅ 9 formas de pagamento específicas
@@ -2273,7 +2390,6 @@ Aplicativo Android para gestão de fretes e transportes.
 - ✅ Acessibilidade completa
 
 ## Tecnologias
-
 - Kotlin
 - Jetpack Compose
 - Material 3
@@ -2282,37 +2398,33 @@ Aplicativo Android para gestão de fretes e transportes.
 - DataStore Preferences
 
 ## Instalação
-
 1. Clone o repositório
 2. Abra no Android Studio
 3. Execute `./gradlew assembleDebug`
 4. Instale o APK em `app/build/outputs/apk/debug/`
 
 ## Build com GitHub Actions
-
 1. Faça push para a branch `main`
 2. GitHub Actions compilará automaticamente
 3. Baixe o APK em Actions → Artifacts
 
 ## Changelog
-
 Veja [CHANGELOG.md](CHANGELOG.md) para histórico de versões.
 
 ## Licença
-
 Proprietário - GerFrota Fretes
 '''
 
 # ============================================================
 # FUNÇÃO PRINCIPAL
 # ============================================================
-
 def criar_projeto():
     print("=" * 60)
     print("  GERADOR DO PROJETO GerFrota Fretes v8.0")
     print("  VERSÃO FINAL COMPLETA")
     print("=" * 60)
     print()
+    
     if os.path.exists(PROJETO):
         resposta = input(f"A pasta '{PROJETO}' já existe. Deseja sobrescrever? (s/N): ")
         if resposta.lower() != 's':
@@ -2323,11 +2435,13 @@ def criar_projeto():
     
     total = len(A)
     criado = 0
+    
     for caminho, conteudo in A.items():
         caminho_completo = os.path.join(PROJETO, caminho)
         diretorio = os.path.dirname(caminho_completo)
         if diretorio:
             os.makedirs(diretorio, exist_ok=True)
+        
         with open(caminho_completo, 'w', encoding='utf-8') as f:
             f.write(conteudo.lstrip('\n'))
         criado += 1
@@ -2364,7 +2478,7 @@ if __name__ == "__main__":
     try:
         criar_projeto()
     except KeyboardInterrupt:
-        print("\n\nOperação cancelada.")
+        print("\nOperação cancelada.")
         sys.exit(1)
     except Exception as e:
         print(f"\nErro: {e}")
