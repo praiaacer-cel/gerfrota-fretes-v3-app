@@ -70,24 +70,20 @@ jobs:
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
+            # 1. Baixar scripts do wrapper (versão 8.4)
             curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.sh -o gradlew
             curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.bat -o gradlew.bat
             chmod +x gradlew
             
-            curl -sL https://services.gradle.org/distributions/gradle-8.4-bin.zip -o gradle-dist.zip
-            unzip -q gradle-dist.zip
+            # 2. ✅ CORREÇÃO: Baixar o gradle-wrapper.jar diretamente (muito mais rápido e leve)
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
             
-            WRAPPER_JAR=$(find gradle-8.4 -name "gradle-wrapper.jar" | head -n 1)
-            if [ -n "$WRAPPER_JAR" ]; then
-              cp "$WRAPPER_JAR" gradle/wrapper/gradle-wrapper.jar
-            else
-              echo "❌ Não foi possível encontrar o gradle-wrapper.jar na distribuição."
+            if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+              echo "❌ Falha ao baixar o gradle-wrapper.jar."
               exit 1
             fi
             
-            rm -rf gradle-8.4 gradle-dist.zip
-            
-            # ✅ CORREÇÃO DEFINITIVA: Usar echo em vez de heredoc para evitar erro de indentação do YAML
+            # 3. Criar propriedades do wrapper (usando echo para evitar erros de indentação do YAML)
             echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
             echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
             echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
