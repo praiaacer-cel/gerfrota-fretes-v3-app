@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================
-GERADOR DO PROJETO GerFrota Fretes v8.0 - VERSÃO FINAL COMPLETA
+GERADOR DO PROJETO GerFrota Fretes v1.0 - NOVO APP
 =============================================================
 App Android para gestão de fretes com todas as funcionalidades
 USO: python3 criar_gerfrota_fretes_v3.py
@@ -49,7 +49,7 @@ kotlin.code.style=official
 android.nonTransitiveRClass=true
 '''
 
-# 4. app/build.gradle.kts
+# 4. app/build.gradle.kts - ALTERADO applicationId e namespace
 A["app/build.gradle.kts"] = r'''plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -57,15 +57,15 @@ A["app/build.gradle.kts"] = r'''plugins {
 }
 
 android {
-    namespace = "com.gerfrota.fretes"
+    namespace = "com.gerfrota.fretes.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.gerfrota.fretes"
+        applicationId = "com.gerfrota.fretes.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "8.0"
+        versionCode = 1
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -177,8 +177,8 @@ A["app/src/main/AndroidManifest.xml"] = r'''<?xml version="1.0" encoding="utf-8"
 </manifest>
 '''
 
-# 6. Theme.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/theme/Theme.kt"] = r'''package com.gerfrota.fretes.ui.theme
+# 6. Theme.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/theme/Theme.kt"] = r'''package com.gerfrota.fretes.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
@@ -229,8 +229,8 @@ fun GerFrotaTheme(
 }
 '''
 
-# 7. Type.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/theme/Type.kt"] = r'''package com.gerfrota.fretes.ui.theme
+# 7. Type.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/theme/Type.kt"] = r'''package com.gerfrota.fretes.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -249,8 +249,8 @@ val GerFrotaTypography = Typography(
 )
 '''
 
-# 8. Shape.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/theme/Shape.kt"] = r'''package com.gerfrota.fretes.ui.theme
+# 8. Shape.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/theme/Shape.kt"] = r'''package com.gerfrota.fretes.app.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
@@ -263,8 +263,8 @@ val GerFrotaShapes = Shapes(
 )
 '''
 
-# 9. PlacaEntity.kt
-A["app/src/main/java/com/gerfrota/fretes/data/PlacaEntity.kt"] = r'''package com.gerfrota.fretes.data
+# 9. PlacaEntity.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/PlacaEntity.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -281,8 +281,8 @@ object PlacasPadrao {
 }
 '''
 
-# 10. FreteEntity.kt
-A["app/src/main/java/com/gerfrota/fretes/data/FreteEntity.kt"] = r'''package com.gerfrota.fretes.data
+# 10. FreteEntity.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/FreteEntity.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -333,8 +333,8 @@ data class ResumoFormaPagto(
 )
 '''
 
-# 11. PlacaDao.kt
-A["app/src/main/java/com/gerfrota/fretes/data/PlacaDao.kt"] = r'''package com.gerfrota.fretes.data
+# 11. PlacaDao.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/PlacaDao.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -356,8 +356,8 @@ interface PlacaDao {
 }
 '''
 
-# 12. FreteDao.kt
-A["app/src/main/java/com/gerfrota/fretes/data/FreteDao.kt"] = r'''package com.gerfrota.fretes.data
+# 12. FreteDao.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/FreteDao.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -419,8 +419,8 @@ interface FreteDao {
 data class SaldoTransportadora(val transportadora: String, val total: Double)
 '''
 
-# 13. AppDatabase.kt
-A["app/src/main/java/com/gerfrota/fretes/data/AppDatabase.kt"] = r'''package com.gerfrota.fretes.data
+# 13. AppDatabase.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/AppDatabase.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import android.content.Context
 import androidx.room.Database
@@ -429,7 +429,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [FreteEntity::class, PlacaEntity::class], version = 3, exportSchema = false)
+@Database(entities = [FreteEntity::class, PlacaEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun freteDao(): FreteDao
     abstract fun placaDao(): PlacaDao
@@ -437,36 +437,18 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
 
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""CREATE TABLE IF NOT EXISTS `placas` (`placa` TEXT NOT NULL PRIMARY KEY, `ativa` INTEGER NOT NULL DEFAULT 1, `dataCadastro` INTEGER NOT NULL DEFAULT 0)""")
-                PlacasPadrao.lista.forEach { placa ->
-                    db.execSQL("INSERT OR IGNORE INTO `placas` (placa, ativa, dataCadastro) VALUES ('$placa', 1, ${System.currentTimeMillis()})")
-                }
-            }
-        }
-
-        val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `fretes` ADD COLUMN `createdAt` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `fretes` ADD COLUMN `updatedAt` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `fretes` ADD COLUMN `recebidoEm` INTEGER")
-                db.execSQL("ALTER TABLE `fretes` ADD COLUMN `observacao` TEXT")
-                db.execSQL("ALTER TABLE `fretes` ADD COLUMN `isDraft` INTEGER NOT NULL DEFAULT 0")
-            }
-        }
-
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "gerfrota.db")
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
+                    .fallbackToDestructiveMigration()
+                    .build().also { INSTANCE = it }
             }
     }
 }
 '''
 
-# 14. Repository.kt
-A["app/src/main/java/com/gerfrota/fretes/data/Repository.kt"] = r'''package com.gerfrota.fretes.data
+# 14. Repository.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/Repository.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import kotlinx.coroutines.flow.Flow
 
@@ -514,8 +496,8 @@ class Repository(private val dao: FreteDao, private val placaDao: PlacaDao) {
 }
 '''
 
-# 15. AuthManager.kt
-A["app/src/main/java/com/gerfrota/fretes/data/AuthManager.kt"] = r'''package com.gerfrota.fretes.data
+# 15. AuthManager.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/AuthManager.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -563,8 +545,8 @@ object AuthManager {
 enum class LoginResult { SUCCESS, WRONG_EMAIL, WRONG_PASSWORD, NOT_REGISTERED }
 '''
 
-# 16. LocalBackupManager.kt
-A["app/src/main/java/com/gerfrota/fretes/data/LocalBackupManager.kt"] = r'''package com.gerfrota.fretes.data
+# 16. LocalBackupManager.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/LocalBackupManager.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -627,8 +609,8 @@ object LocalBackupManager {
 }
 '''
 
-# 17. PreferencesManager.kt
-A["app/src/main/java/com/gerfrota/fretes/data/PreferencesManager.kt"] = r'''package com.gerfrota.fretes.data
+# 17. PreferencesManager.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/PreferencesManager.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -669,8 +651,8 @@ object PreferencesManager {
 }
 '''
 
-# 18. MoneyFormatter.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/MoneyFormatter.kt"] = r'''package com.gerfrota.fretes.ui
+# 18. MoneyFormatter.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/MoneyFormatter.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import java.text.NumberFormat
 import java.util.Locale
@@ -693,8 +675,8 @@ object MoneyFormatter {
 }
 '''
 
-# 19. VoiceInputHelper.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/VoiceInputHelper.kt"] = r'''package com.gerfrota.fretes.ui
+# 19. VoiceInputHelper.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/VoiceInputHelper.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import android.content.Intent
 import android.speech.RecognizerIntent
@@ -719,8 +701,8 @@ object VoiceInputHelper {
 }
 '''
 
-# 20. PdfExporter.kt
-A["app/src/main/java/com/gerfrota/fretes/data/PdfExporter.kt"] = r'''package com.gerfrota.fretes.data
+# 20. PdfExporter.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/data/PdfExporter.kt"] = r'''package com.gerfrota.fretes.app.data
 
 import android.content.Context
 import android.content.Intent
@@ -991,8 +973,8 @@ object PdfExporter {
 }
 '''
 
-# 21. DriveBackupManager.kt
-A["app/src/main/java/com/gerfrota/fretes/drive/DriveBackupManager.kt"] = r'''package com.gerfrota.fretes.drive
+# 21. DriveBackupManager.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/drive/DriveBackupManager.kt"] = r'''package com.gerfrota.fretes.app.drive
 
 import android.accounts.AccountManager
 import android.content.Context
@@ -1072,8 +1054,8 @@ sealed class BackupDriveResult {
 }
 '''
 
-# 22. LoginScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/LoginScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 22. LoginScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/LoginScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -1095,10 +1077,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.R
-import com.gerfrota.fretes.data.AuthManager
-import com.gerfrota.fretes.data.LoginResult
-import com.gerfrota.fretes.data.Repository
+import com.gerfrota.fretes.app.R
+import com.gerfrota.fretes.app.data.AuthManager
+import com.gerfrota.fretes.app.data.LoginResult
+import com.gerfrota.fretes.app.data.Repository
 
 @Composable
 fun LoginScreen(repo: Repository, onLoginSuccess: () -> Unit) {
@@ -1164,8 +1146,8 @@ fun LoginScreen(repo: Repository, onLoginSuccess: () -> Unit) {
 }
 '''
 
-# 23. MainScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/MainScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 23. MainScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/MainScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -1178,7 +1160,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.gerfrota.fretes.data.Repository
+import com.gerfrota.fretes.app.data.Repository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1264,8 +1246,8 @@ fun MainScreen(repo: Repository, userEmail: String, onLogout: () -> Unit) {
 data class BottomNavItem(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val route: String)
 '''
 
-# 24. InicioScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/InicioScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 24. InicioScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/InicioScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1282,8 +1264,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -1398,8 +1380,8 @@ fun PendenciaCard(title: String, subtitle: String, status: String, statusColor: 
 }
 '''
 
-# 25. FretesScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/FretesScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 25. FretesScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/FretesScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1417,9 +1399,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.FreteEntity
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.FreteEntity
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import java.text.NumberFormat
 import java.util.*
 
@@ -1489,8 +1471,8 @@ fun FreteCard(frete: FreteEntity, nf: NumberFormat, onClick: () -> Unit) {
 }
 '''
 
-# 26. FinanceiroScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/FinanceiroScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 26. FinanceiroScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/FinanceiroScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1507,9 +1489,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.data.SaldoTransportadora
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.data.SaldoTransportadora
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import java.text.NumberFormat
 import java.util.*
 
@@ -1552,8 +1534,8 @@ fun TransportadoraCard(saldo: SaldoTransportadora, nf: NumberFormat) {
 }
 '''
 
-# 27. MaisScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/MaisScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 27. MaisScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/MaisScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1569,7 +1551,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 
 @Composable
 fun MaisScreen(userEmail: String, onNavigateToPlacas: () -> Unit, onNavigateToBackup: () -> Unit, onNavigateToRelatorios: () -> Unit, onLogout: () -> Unit) {
@@ -1617,8 +1599,8 @@ fun MenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: Strin
 }
 '''
 
-# 28. NovoFreteScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/NovoFreteScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 28. NovoFreteScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/NovoFreteScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -1635,10 +1617,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.FreteEntity
-import com.gerfrota.fretes.data.FormasPagamento
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.FreteEntity
+import com.gerfrota.fretes.app.data.FormasPagamento
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -1754,8 +1736,8 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
 }
 '''
 
-# 29. DetalheFreteScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/DetalheFreteScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 29. DetalheFreteScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/DetalheFreteScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -1770,8 +1752,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
@@ -1850,8 +1832,8 @@ fun DetalheFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit, onEd
 }
 '''
 
-# 30. EditarFreteScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/EditarFreteScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 30. EditarFreteScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/EditarFreteScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -1868,10 +1850,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.FreteEntity
-import com.gerfrota.fretes.data.FormasPagamento
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.FreteEntity
+import com.gerfrota.fretes.app.data.FormasPagamento
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
@@ -1939,8 +1921,8 @@ fun EditarFreteScreen(repo: Repository, freteId: Long, onBack: () -> Unit) {
 }
 '''
 
-# 31. PlacasScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/PlacasScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 31. PlacasScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/PlacasScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -1957,9 +1939,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.PlacaEntity
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.PlacaEntity
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2019,8 +2001,8 @@ fun PlacasScreen(repo: Repository, onBack: () -> Unit) {
 }
 '''
 
-# 32. BackupScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/BackupScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 32. BackupScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/BackupScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -2037,12 +2019,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.LocalBackupManager
-import com.gerfrota.fretes.data.PreferencesManager
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.drive.BackupDriveResult
-import com.gerfrota.fretes.drive.DriveBackupManager
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.LocalBackupManager
+import com.gerfrota.fretes.app.data.PreferencesManager
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.drive.BackupDriveResult
+import com.gerfrota.fretes.app.drive.DriveBackupManager
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -2155,8 +2137,8 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit) {
 }
 '''
 
-# 33. RelatoriosScreen.kt
-A["app/src/main/java/com/gerfrota/fretes/ui/RelatoriosScreen.kt"] = r'''package com.gerfrota.fretes.ui
+# 33. RelatoriosScreen.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/ui/RelatoriosScreen.kt"] = r'''package com.gerfrota.fretes.app.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -2174,9 +2156,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gerfrota.fretes.data.PdfExporter
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.theme.GerFrotaColors
+import com.gerfrota.fretes.app.data.PdfExporter
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.theme.GerFrotaColors
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
@@ -2187,10 +2169,8 @@ fun RelatoriosScreen(repo: Repository, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val fretes by repo.fretes.collectAsState(initial = emptyList())
-    
     val resumoSaldo by repo.resumoSaldoPorForma.collectAsState(initial = emptyList())
     val resumoAdiant by repo.resumoAdiantamentoPorForma.collectAsState(initial = emptyList())
-    
     val nf = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
     var selectedReport by remember { mutableStateOf<String?>(null) }
 
@@ -2248,19 +2228,19 @@ fun ReportCard(title: String, subtitle: String, icon: androidx.compose.ui.graphi
 }
 '''
 
-# 34. MainActivity.kt
-A["app/src/main/java/com/gerfrota/fretes/MainActivity.kt"] = r'''package com.gerfrota.fretes
+# 34. MainActivity.kt - PACOTE ALTERADO
+A["app/src/main/java/com/gerfrota/fretes/app/MainActivity.kt"] = r'''package com.gerfrota.fretes.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
-import com.gerfrota.fretes.data.AppDatabase
-import com.gerfrota.fretes.data.AuthManager
-import com.gerfrota.fretes.data.Repository
-import com.gerfrota.fretes.ui.LoginScreen
-import com.gerfrota.fretes.ui.MainScreen
-import com.gerfrota.fretes.ui.theme.GerFrotaTheme
+import com.gerfrota.fretes.app.data.AppDatabase
+import com.gerfrota.fretes.app.data.AuthManager
+import com.gerfrota.fretes.app.data.Repository
+import com.gerfrota.fretes.app.ui.LoginScreen
+import com.gerfrota.fretes.app.ui.MainScreen
+import com.gerfrota.fretes.app.ui.theme.GerFrotaTheme
 
 class MainActivity : ComponentActivity() {
     private val repo by lazy { val db = AppDatabase.get(this); Repository(db.freteDao(), db.placaDao()) }
@@ -2330,9 +2310,8 @@ A["app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"] = r'''<?xml versio
 </adaptive-icon>
 '''
 
-# ✅ CORREÇÃO APLICADA AQUI: Adicionadas regras para ignorar warnings do Apache HTTP Client no R8
 A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard / R8
--keep class com.gerfrota.fretes.data.** { *; }
+-keep class com.gerfrota.fretes.app.data.** { *; }
 -keep class com.google.api.** { *; }
 -keep class com.google.auth.** { *; }
 -keepattributes Signature
@@ -2352,7 +2331,7 @@ A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard / R8
 '''
 
 A["CHANGELOG.md"] = r'''# Changelog - GerFrota Fretes
-## [8.0.0] - 2026-08-20
+## [1.0.0] - 2026-08-21
 ### Adicionado
 - Design System Material 3 completo com modo escuro
 - Navegação inferior (Início, Fretes, Financeiro, Mais)
@@ -2426,8 +2405,8 @@ Proprietário - GerFrota Fretes
 # ============================================================
 def criar_projeto():
     print("=" * 60)
-    print("  GERADOR DO PROJETO GerFrota Fretes v8.0")
-    print("  VERSÃO FINAL COMPLETA")
+    print("  GERADOR DO PROJETO GerFrota Fretes v1.0")
+    print("  NOVO APP - IDENTIFICADOR ÚNICO")
     print("=" * 60)
     print()
     
@@ -2460,6 +2439,9 @@ def criar_projeto():
     print()
     print(f"  Pasta: {os.path.abspath(PROJETO)}")
     print(f"  Arquivos: {criado}")
+    print()
+    print("  IDENTIFICADOR DO APP: com.gerfrota.fretes.app")
+    print("  VERSÃO: 1.0.0")
     print()
     print("  FUNCIONALIDADES:")
     print("  ✓ Design System Material 3 com modo escuro")
