@@ -66,25 +66,31 @@ jobs:
           fi
           
           if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
-            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
+            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente (método à prova de falhas)..."
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
-            # 1. ✅ CORREÇÃO: Usar a branch 'master' para garantir que os arquivos do wrapper existam
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.sh -o gradlew
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+            # 1. Criar o script gradlew localmente via echo (ZERO risco de erro 404 ou indentação YAML)
+            echo '#!/bin/sh' > gradlew
+            echo 'APP_HOME=$(cd "$(dirname "$0")" && pwd)' >> gradlew
+            echo 'CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"' >> gradlew
+            echo 'if [ ! -f "$CLASSPATH" ]; then' >> gradlew
+            echo '  echo "ERROR: gradle-wrapper.jar não encontrado"' >> gradlew
+            echo '  exit 1' >> gradlew
+            echo 'fi' >> gradlew
+            echo 'exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"' >> gradlew
+            chmod +x gradlew
             
-            # 2. VALIDAÇÃO DE SEGURANÇA: Impede que um erro 404 seja executado como script
-            if ! head -1 gradlew | grep -q "#!/bin/sh"; then
-              echo "❌ Falha ao baixar gradlew (resposta inválida ou 404 do GitHub)"
-              echo "Conteúdo baixado:"
-              cat gradlew
+            # 2. Baixar APENAS o gradle-wrapper.jar do repositório oficial do Gradle (URL estável)
+            curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+            
+            # 3. Validar se o arquivo .jar foi baixado com sucesso (tamanho > 0)
+            if [ ! -s "gradle/wrapper/gradle-wrapper.jar" ]; then
+              echo "❌ Falha ao baixar gradle-wrapper.jar (arquivo vazio ou inexistente)"
               exit 1
             fi
             
-            chmod +x gradlew
-            
-            # 3. Criar propriedades do wrapper (usando echo para evitar erros de indentação do YAML)
+            # 4. Criar propriedades do wrapper
             echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
             echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
             echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
