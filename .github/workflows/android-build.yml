@@ -70,18 +70,19 @@ jobs:
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
-            # 1. Baixar scripts do wrapper (versão 8.4)
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.sh -o gradlew
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.bat -o gradlew.bat
-            chmod +x gradlew
+            # 1. Baixar scripts e jar do wrapper (TAG CORRETA: v8.4, sem o .0)
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.sh -o gradlew
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
             
-            # 2. ✅ CORREÇÃO: Baixar o gradle-wrapper.jar diretamente (muito mais rápido e leve)
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-            
-            if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-              echo "❌ Falha ao baixar o gradle-wrapper.jar."
+            # 2. ✅ VALIDAÇÃO DE SEGURANÇA: Impede que um erro 404 seja executado como script
+            if ! head -1 gradlew | grep -q "#!/bin/sh"; then
+              echo "❌ Falha ao baixar gradlew (resposta inválida ou 404 do GitHub)"
+              echo "Conteúdo baixado:"
+              cat gradlew
               exit 1
             fi
+            
+            chmod +x gradlew
             
             # 3. Criar propriedades do wrapper (usando echo para evitar erros de indentação do YAML)
             echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
