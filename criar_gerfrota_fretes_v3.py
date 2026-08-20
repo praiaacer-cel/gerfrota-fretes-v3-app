@@ -1701,7 +1701,6 @@ fun NovoFreteScreen(repo: Repository, onBack: () -> Unit) {
                 OutlinedTextField(value = valorFrete, onValueChange = { valorFrete = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Valor do frete") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), leadingIcon = { Text("R$", modifier = Modifier.padding(start = 12.dp)) })
                 Spacer(Modifier.height(12.dp))
                 
-                // ✅ CORREÇÃO: Atribuição local para evitar erro de smart cast em propriedade delegada
                 OutlinedTextField(value = adiantamento, onValueChange = { adiantamento = MoneyFormatter.applyMask(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Adiantamento") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), leadingIcon = { Text("R$", modifier = Modifier.padding(start = 12.dp)) }, isError = erroAdiantamento != null, supportingText = { val err = erroAdiantamento; if (err != null) Text(err, color = MaterialTheme.colorScheme.error) })
                 
                 Spacer(Modifier.height(16.dp))
@@ -2189,7 +2188,6 @@ fun RelatoriosScreen(repo: Repository, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val fretes by repo.fretes.collectAsState(initial = emptyList())
     
-    // ✅ CORREÇÃO: Coletar os Flows como estado em vez de tentar acessar .value diretamente
     val resumoSaldo by repo.resumoSaldoPorForma.collectAsState(initial = emptyList())
     val resumoAdiant by repo.resumoAdiantamentoPorForma.collectAsState(initial = emptyList())
     
@@ -2332,7 +2330,8 @@ A["app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"] = r'''<?xml versio
 </adaptive-icon>
 '''
 
-A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard
+# ✅ CORREÇÃO APLICADA AQUI: Adicionadas regras para ignorar warnings do Apache HTTP Client no R8
+A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard / R8
 -keep class com.gerfrota.fretes.data.** { *; }
 -keep class com.google.api.** { *; }
 -keep class com.google.auth.** { *; }
@@ -2343,6 +2342,13 @@ A["app/proguard-rules.pro"] = r'''# GerFrota Fretes - Regras ProGuard
 -keep class androidx.compose.** { *; }
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Regras para lidar com dependências opcionais do Apache HTTP Client (Google API Client)
+-dontwarn javax.naming.**
+-dontwarn org.ietf.jgss.**
+-dontwarn org.apache.http.**
+-keep class javax.naming.** { *; }
+-keep class org.ietf.jgss.** { *; }
 '''
 
 A["CHANGELOG.md"] = r'''# Changelog - GerFrota Fretes
