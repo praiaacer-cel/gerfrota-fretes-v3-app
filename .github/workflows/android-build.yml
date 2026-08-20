@@ -70,11 +70,11 @@ jobs:
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
-            # 1. Baixar scripts e jar do wrapper (TAG CORRETA: v8.4, sem o .0)
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.sh -o gradlew
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+            # 1. ✅ CORREÇÃO: Usar a branch 'master' para garantir que os arquivos do wrapper existam
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.sh -o gradlew
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
             
-            # 2. ✅ VALIDAÇÃO DE SEGURANÇA: Impede que um erro 404 seja executado como script
+            # 2. VALIDAÇÃO DE SEGURANÇA: Impede que um erro 404 seja executado como script
             if ! head -1 gradlew | grep -q "#!/bin/sh"; then
               echo "❌ Falha ao baixar gradlew (resposta inválida ou 404 do GitHub)"
               echo "Conteúdo baixado:"
