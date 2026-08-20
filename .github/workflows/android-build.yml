@@ -111,7 +111,7 @@ jobs:
         working-directory: GerFrotaFretesApp
         run: |
           echo ">> Arquivos APK no diretório de saída:"
-          ls -la app/build/outputs/apk/release || true
+          ls -lh app/build/outputs/apk/release || true
 
       - name: Optionally sign APK (requires repo secrets)
         env:
@@ -135,7 +135,7 @@ jobs:
           
           unsigned_apk=$(ls app/build/outputs/apk/release/*unsigned*.apk 2>/dev/null | head -n1 || true)
           if [ -z "$unsigned_apk" ]; then
-            unsigned_apk=$(ls app/build/outputs/apk/release/*release*.apk 2>/dev/null | head -n1 || true)
+            unsigned_apk=$(ls app/build/outputs/apk/release/app-release*.apk 2>/dev/null | grep -v "unsigned" | head -n1 || true)
           fi
           if [ -z "$unsigned_apk" ]; then
             echo "❌ Nenhum APK encontrado para assinar" && exit 1
@@ -145,29 +145,37 @@ jobs:
           $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --key-pass pass:$KEY_PASSWORD --out "$signed_apk" "$unsigned_apk"
           echo "✅ APK assinado com sucesso: $signed_apk"
 
-      # ✅ NOME AJUSTADO PARA CLAREZA
-      - name: Select APK for artifact
+      - name: Select and Verify APK
         working-directory: GerFrotaFretesApp
         run: |
+          echo "🔍 Validando o arquivo APK antes do upload..."
+          
+          # 1. Preferir o APK assinado se existir
           signed=$(ls app/build/outputs/apk/release/*-signed*.apk 2>/dev/null | head -n1 || true)
           if [ -n "$signed" ]; then
             echo "APK_TO_UPLOAD=$(pwd)/$signed" >> $GITHUB_ENV
-            echo "✅ Usando APK assinado: $signed"
+            echo "✅ APK selecionado (Assinado): $signed"
+            ls -lh "$signed"
             exit 0
           fi
           
-          release_apk=$(ls app/build/outputs/apk/release/*release*.apk 2>/dev/null | head -n1 || true)
+          # 2. Caso contrário, preferir o APK de release padrão (ignorando explicitamente os 'unsigned' se possível)
+          release_apk=$(ls app/build/outputs/apk/release/app-release*.apk 2>/dev/null | grep -v "unsigned" | head -n1 || true)
+          if [ -z "$release_apk" ]; then
+            release_apk=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -n1 || true)
+          fi
+          
           if [ -n "$release_apk" ]; then
             echo "APK_TO_UPLOAD=$(pwd)/$release_apk" >> $GITHUB_ENV
-            echo "✅ Usando APK de release: $release_apk"
+            echo "✅ APK selecionado (Release): $release_apk"
+            ls -lh "$release_apk"
             exit 0
           fi
           
-          echo "❌ Nenhum APK válido encontrado em app/build/outputs/apk/release" >&2
+          echo "❌ Nenhum arquivo .apk válido encontrado em app/build/outputs/apk/release" >&2
           exit 1
 
-      # ✅ NOME AJUSTADO PARA CLAREZA
-      - name: Save APK as GitHub Artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: GerFrota-Fretes-Release-APK
