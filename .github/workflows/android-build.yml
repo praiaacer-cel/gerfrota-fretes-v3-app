@@ -87,13 +87,12 @@ jobs:
             
             rm -rf gradle-8.4 gradle-dist.zip
             
-            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-EOF
+            # ✅ CORREÇÃO DEFINITIVA: Usar echo em vez de heredoc para evitar erro de indentação do YAML
+            echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+            echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+            echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+            echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
             
             cd ..
             echo "✅ Wrapper do Gradle gerado e configurado com sucesso!"
@@ -118,7 +117,7 @@ EOF
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
+            echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
             exit 0
           fi
           
