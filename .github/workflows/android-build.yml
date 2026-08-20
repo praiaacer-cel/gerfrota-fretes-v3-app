@@ -44,7 +44,6 @@ jobs:
           fi
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
           
-          # Aceitar licenças criando os arquivos diretamente (evita o erro "Broken pipe")
           mkdir -p $ANDROID_SDK_ROOT/licenses
           echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
@@ -58,7 +57,7 @@ jobs:
           echo "🚀 Executando script Python para preparar o projeto..."
           python3 criar_gerfrota_fretes_v3.py
           
-          echo " Verificando estrutura de arquivos gerada..."
+          echo "🔍 Verificando estrutura de arquivos gerada..."
           ls -la
           
           if [ ! -d "./GerFrotaFretesApp" ]; then
@@ -66,22 +65,18 @@ jobs:
             exit 1
           fi
           
-          # ✅ CORREÇÃO DEFINITIVA: Se o gradlew não existir, nós o criamos automaticamente
           if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
-            echo "️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
+            echo "⚠️ 'gradlew' não encontrado. Gerando wrapper do Gradle automaticamente..."
             mkdir -p ./GerFrotaFretesApp/gradle/wrapper
             cd ./GerFrotaFretesApp
             
-            # 1. Baixar scripts do wrapper (versão 8.4)
             curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.sh -o gradlew
             curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.bat -o gradlew.bat
             chmod +x gradlew
             
-            # 2. Baixar distribuição do Gradle apenas para extrair o .jar do wrapper
             curl -sL https://services.gradle.org/distributions/gradle-8.4-bin.zip -o gradle-dist.zip
             unzip -q gradle-dist.zip
             
-            # O jar do wrapper está dentro da distribuição baixada
             WRAPPER_JAR=$(find gradle-8.4 -name "gradle-wrapper.jar" | head -n 1)
             if [ -n "$WRAPPER_JAR" ]; then
               cp "$WRAPPER_JAR" gradle/wrapper/gradle-wrapper.jar
@@ -90,11 +85,9 @@ jobs:
               exit 1
             fi
             
-            # Limpeza dos arquivos temporários
             rm -rf gradle-8.4 gradle-dist.zip
             
-            # 3. Criar propriedades do wrapper
-            cat > gradle/wrapper/gradle-wrapper.properties << EOF
+            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
 distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
@@ -125,7 +118,7 @@ EOF
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
+            echo "️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
             exit 0
           fi
           
