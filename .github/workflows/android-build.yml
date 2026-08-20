@@ -53,10 +53,27 @@ jobs:
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
         shell: bash
         
-      # ✅ CORREÇÃO: O script Python agora roda ANTES de tentar acessar o gradlew
+      # ✅ CORREÇÃO FINAL: Executar na raiz, com validação e debug
       - name: Execute Python script to prepare project
         run: |
+          echo "🚀 Executando script Python para preparar o projeto..."
           python3 criar_gerfrota_fretes_v3.py
+          
+          echo "🔍 Verificando estrutura de arquivos gerada..."
+          ls -la
+          
+          if [ ! -d "./GerFrotaFretesApp" ]; then
+            echo "❌ ERRO CRÍTICO: O diretório 'GerFrotaFretesApp' não foi criado pelo script Python!"
+            echo "Verifique se o script 'criar_gerfrota_fretes_v3.py' está na raiz e funcionando corretamente."
+            exit 1
+          fi
+          
+          if [ ! -f "./GerFrotaFretesApp/gradlew" ]; then
+            echo "❌ ERRO CRÍTICO: O arquivo 'gradlew' não foi encontrado dentro de 'GerFrotaFretesApp'!"
+            exit 1
+          fi
+          
+          echo "✅ Estrutura do projeto gerada com sucesso!"
         working-directory: .
         
       - name: Ensure gradlew is executable
@@ -74,7 +91,6 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # Verificação feita dentro do bash para evitar erro de parser do YAML
           if [ -z "$ANDROID_KEYSTORE" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
             echo "⚠️ Secrets de assinatura não configurados. Pulando etapa de assinatura do APK."
             exit 0
